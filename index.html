@@ -1,291 +1,519 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memorama Blender</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
-    <style>
-        /* Estilo para la fuente y el tema general */
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
-        body {
-            font-family: 'Fredoka One', cursive;
-            background-image: url('https://www.publicdomainpictures.net/pictures/270000/velka/concrete-texture-background-2.jpg');
-            background-size: cover;
-            color: #4A4A4A;
-            overscroll-behavior: none; 
-        }
-        /* Estilos para las cartas del juego */
-        .card {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            transform-style: preserve-3d;
-            transition: transform 0.6s;
-            cursor: pointer;
-        }
-        .card.flipped {
-            transform: rotateY(180deg);
-        }
-        .card.matched {
-            cursor: default;
-        }
-        .card-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            border-radius: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        .card-front {
-            background: linear-gradient(135deg, #FFA500, #FFC107);
-            font-size: 3rem; 
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
-        .card-back {
-            background-color: #fff;
-            padding: 5px;
-            transform: rotateY(180deg);
-            font-size: 2.5rem;
-        }
-        .card-back img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 8px;
-        }
-        #game-board {
-            display: grid;
-            gap: 10px;
-        }
-        
-        @keyframes skull-animation {
-            0%, 100% { transform: scale(1) rotate(-5deg); }
-            50% { transform: scale(1.1) rotate(5deg); }
-        }
-        .skull-animated {
-            animation: skull-animation 2s ease-in-out infinite;
-        }
-        @keyframes confetti-fall {
-            from { transform: translateY(-10vh) rotate(0deg); }
-            to { transform: translateY(110vh) rotate(720deg); }
-        }
-        .confetti {
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            background-color: #f00;
-            opacity: 0.7;
-            animation: confetti-fall 3s linear forwards;
-        }
-        
-        @keyframes ink-spread {
-            from { opacity: 0; }
-            to { opacity: 0.85; }
-        }
-        #ink-overlay.active {
-            animation: ink-spread 0.5s forwards;
-        }
-        @keyframes card-shuffle-animation {
-            0% { transform: scale(1) rotate(0deg); }
-            25% { transform: scale(1.1) rotate(-10deg); }
-            75% { transform: scale(1.1) rotate(10deg); }
-            100% { transform: scale(1) rotate(0deg); }
-        }
-        .shuffling {
-            animation: card-shuffle-animation 0.5s ease-in-out;
-            z-index: 10;
-        }
-        
-        @keyframes popup-animation {
-            0% { transform: scale(0.5); opacity: 0; }
-            70% { transform: scale(1.05); opacity: 1; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        #trap-message-container {
-            animation: popup-animation 0.3s ease-out forwards;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memorama Blender</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        /* Estilo para la fuente y el tema general */
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
+        body {
+            font-family: 'Fredoka One', cursive;
+            background-image: url('https://www.publicdomainpictures.net/pictures/270000/velka/concrete-texture-background-2.jpg');
+            background-size: cover;
+            color: #4A4A4A;
+            overscroll-behavior: none; 
+        }
+        /* Estilos para las cartas del juego */
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+        }
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+        .card.matched {
+            cursor: default;
+            opacity: 0.5;
+        }
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .card-front {
+            background: linear-gradient(135deg, #FFA500, #FFC107);
+            font-size: 3rem; 
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .card-back {
+            background-color: #fff;
+            padding: 5px;
+            transform: rotateY(180deg);
+            font-size: 2.5rem;
+        }
+        .card-back img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        #game-board {
+            display: grid;
+            gap: 10px;
+        }
+        #initial-start-button:active {
+            transform: scale(1.05);
+        }
+        
+        /* Animaciones */
+        @keyframes skull-animation {
+            0%, 100% { transform: scale(1) rotate(-5deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+        }
+        .skull-animated {
+            animation: skull-animation 2s ease-in-out infinite;
+        }
+        @keyframes confetti-fall {
+            from { transform: translateY(-10vh) rotate(0deg); }
+            to { transform: translateY(110vh) rotate(720deg); }
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            opacity: 0.7;
+            animation: confetti-fall 3s linear forwards;
+        }
+        
+        @keyframes ink-spread {
+            from { opacity: 0; }
+            to { opacity: 0.85; }
+        }
+        #ink-overlay.active {
+            animation: ink-spread 0.5s forwards;
+        }
+        @keyframes card-shuffle-animation {
+            0% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.1) rotate(-10deg); }
+            75% { transform: scale(1.1) rotate(10deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        .shuffling {
+            animation: card-shuffle-animation 0.5s ease-in-out;
+            z-index: 10;
+        }
+        
+        @keyframes popup-animation {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        #trap-message-container {
+            animation: popup-animation 0.3s ease-out forwards;
+        }
+    </style>
 </head>
 <body class="w-screen h-screen flex items-center justify-center p-4 bg-gray-200">
-        <div id="game-container" class="w-full max-w-md mx-auto flex flex-col items-center space-y-4 bg-white/60 backdrop-blur-sm p-6 rounded-2xl shadow-2xl">
-        <h1 class="text-4xl font-bold text-orange-600 drop-shadow-lg">Memorama Blender</h1>
-                <div class="w-full flex justify-between items-center bg-white/50 p-3 rounded-xl shadow-md">
-            <div class="text-center">
-                <span class="text-sm text-orange-700">NIVEL</span>
-                <p id="level-display" class="text-2xl font-bold">1</p>
-            </div>
-            <div class="text-center">
-                <span class="text-sm text-orange-700">TIEMPO</span>
-                <p id="timer-display" class="text-2xl font-bold">0</p>
-            </div>
-        </div>
-                <div id="game-board-container" class="aspect-square w-full p-2 bg-white/30 rounded-xl shadow-inner">
-            <div id="game-board"></div>
-        </div>
-        
-                <div id="controls" class="w-full grid grid-cols-2 gap-4">
-             <button id="start-button" class="w-full bg-green-500 text-white py-3 rounded-lg text-xl shadow-lg transition transform hover:scale-105">Iniciar</button>
-             <button id="stop-button" class="w-full bg-red-500 text-white py-3 rounded-lg text-xl shadow-lg transition transform hover:scale-105" disabled>Detener</button>
-        </div>
-        <button id="music-toggle" class="absolute top-4 right-4 text-3xl">🔇</button>
-    </div>
-        <div id="start-screen" class="absolute inset-0 bg-yellow-400/90 flex flex-col justify-center items-center text-center p-8 z-10">
-        <h2 class="text-5xl text-orange-600 mb-4">¡Bienvenido!</h2>
-        <p class="text-xl mb-8">Encuentra los pares antes de que se acabe el tiempo. ¡Cuidado con las trampas!</p>
-        <button id="initial-start-button" class="bg-green-500 text-white py-4 px-12 rounded-full text-2xl shadow-xl transition transform hover:scale-110">Jugar Ahora</button>
-    </div>
-        <div id="ink-overlay" class="hidden absolute inset-0 bg-black z-30 pointer-events-none"></div>
-    <div id="boom-effect" class="hidden absolute inset-0 bg-red-500/80 z-40 text-white text-9xl font-extrabold items-center justify-center">¡BOOM!</div>
-    <div id="trap-message-container" class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gray-800 text-white p-6 rounded-2xl shadow-2xl z-50 text-center max-w-xs">
-        <p id="trap-message-text" class="text-lg"></p>
-    </div>
-        <div id="game-over-screen" class="hidden absolute inset-0 bg-black/80 flex-col justify-center items-center text-center p-8 z-20 transition-opacity duration-500">
-        <div id="skull-icon" class="text-8xl mb-6 skull-animated">💀</div>
-        <h2 id="game-over-title" class="text-3xl text-red-500 font-bold mb-4">¡Tiempo agotado!</h2>
-        <p id="game-over-message" class="text-white text-lg mb-8">Blenderito está decepcionado de ti :(</p>
-        <button id="restart-button" class="bg-yellow-500 text-gray-800 py-3 px-8 rounded-lg text-xl shadow-lg transition transform hover:scale-105">Reiniciar Nivel</button>
-    </div>
-    <div id="victory-screen" class="hidden absolute inset-0 bg-blue-400/90 flex-col justify-center items-center text-center p-8 z-20 transition-opacity duration-500">
-         <div id="confetti-container" class="absolute inset-0"></div>
-         <h2 class="text-5xl text-white font-extrabold drop-shadow-lg mb-4">¡FELICIDADES!</h2>
-         <p class="text-yellow-200 text-2xl mb-8">Felicidades Tony te debe $5 pesos</p>
-         <button id="play-again-button" class="bg-green-500 text-white py-4 px-12 rounded-full text-2xl shadow-xl transition transform hover:scale-110">Jugar de Nuevo</button>
-    </div>
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const IMAGE_URLS = [
-            'https://blendergroup.com/storage/product/media/565/gallery_1730999766_pWLKv.webp', 'https://blendergroup.com/storage/product/media/588/gallery_1731083526_8Uig3.webp', 'https://blendergroup.com/storage/product/media/570/gallery_1731017629_nAcBJ.webp', 'https://blendergroup.com/storage/product/media/581/gallery_1731021117_qNNUO.webp', 'https://blendergroup.com/storage/product/media/585/gallery_1731021463_T9Kpi.webp', 'https://blendergroup.com/storage/product/media/592/gallery_1731085277_JDKcO.webp', 'https://blendergroup.com/storage/product/media/781/gallery_1739479450_ITYkf.webp', 'https://blendergroup.com/storage/product/media/782/gallery_1739485368_s5Lqg.webp', 'https://blendergroup.com/storage/product/media/566/gallery_1730999841_m1G5l.webp', 'https://blendergroup.com/storage/product/media/590/gallery_1731084346_NZaou.webp', 'https://blendergroup.com/storage/product/media/587/gallery_1731082899_sJWHq.webp', 'https://blendergroup.com/storage/product/media/564/gallery_1730999667_YRbYx.webp', 'https://blendergroup.com/storage/product/media/582/gallery_1731021190_kNHHN.webp', 'https://blendergroup.com/storage/product/media/583/gallery_1731021280_iqST6.webp', 'https://blendergroup.com/storage/product/media/567/gallery_1730999938_9EmxA.webp',
-        ];
-        const MAX_LEVEL = 10;
-        
-        // Elementos del DOM
-        const gameBoard = document.getElementById('game-board');
-        const levelDisplay = document.getElementById('level-display');
-        const timerDisplay = document.getElementById('timer-display');
-        const startButton = document.getElementById('start-button');
-        const stopButton = document.getElementById('stop-button');
-        const musicToggleButton = document.getElementById('music-toggle');
-        const startScreen = document.getElementById('start-screen');
-        const gameOverScreen = document.getElementById('game-over-screen');
-        const gameOverTitle = document.getElementById('game-over-title');
-        const gameOverMessage = document.getElementById('game-over-message');
-        const victoryScreen = document.getElementById('victory-screen');
-        const initialStartButton = document.getElementById('initial-start-button');
-        const restartButton = document.getElementById('restart-button');
-        const playAgainButton = document.getElementById('play-again-button');
-        const inkOverlay = document.getElementById('ink-overlay');
-        const boomEffect = document.getElementById('boom-effect');
-        const trapMessageContainer = document.getElementById('trap-message-container');
-        const trapMessageText = document.getElementById('trap-message-text');
-        // Estado del juego
-        let level = 1, timer, timeLeft = 0, timerInterval, flippedCards = [], matchedPairs = 0, totalPairs = 0;
-        let isBoardLocked = false, isGameActive = false, isMusicPlaying = false;
-        // Configuración de audio
-        const clickSound = new Tone.MembraneSynth({ pitchDecay: 0.02, octaves: 4, envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
-        clickSound.volume.value = -8;
-        const backgroundMusic = new Tone.MembraneSynth({
-            pitchDecay: 0.01,
-            octaves: 6,
-            oscillator: { type: "sine" },
-            envelope: {
-                attack: 0.001,
-                decay: 0.5,
-                sustain: 0.01,
-                release: 1.4,
-                attackCurve: "exponential"
-            }
-        }).toDestination();
-        const musicPattern = new Tone.Sequence((time, note) => {
-            backgroundMusic.triggerAttackRelease(note, "8n", time);
-        }, ["C2", ["E2", "G2"], "A2", ["C3", "E3"]], "2n").start(0);
-        Tone.Transport.bpm.value = 90;
-        
-        const winSound = () => { new Tone.Synth().toDestination().triggerAttackRelease("C5", "8n", Tone.now() + 0); };
-        const loseSound = () => { new Tone.FMSynth().toDestination().triggerAttackRelease("C3", "4n"); };
-        const bombSound = () => { new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.005, decay: 0.3, sustain: 0 } }).toDestination().triggerAttackRelease("2n"); };
-        function shuffle(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
-        function createBoard() {
-            gameBoard.innerHTML = '';
-            isBoardLocked = true;
-            matchedPairs = 0;
-            totalPairs = level + 1;
-            const imagePairs = IMAGE_URLS.slice(0, totalPairs);
-            let deck = imagePairs.flatMap(url => [{ type: 'image', value: url }, { type: 'image', value: url }]);
-            
-            let trapTypes = [];
-            if (level >= 4) trapTypes.push('octopus');
-            if (level >= 6) trapTypes.push('bomb');
-            if (level >= 8) trapTypes.push('tornado');
-            while (trapTypes.length > 2) {
-                trapTypes.splice(Math.floor(Math.random() * trapTypes.length), 1);
-            }
-            
-            trapTypes.forEach(trap => {
-                if (trap === 'octopus') deck.push({ type: 'special', value: 'octopus', icon: '🐙' });
-                if (trap === 'bomb') deck.push({ type: 'special', value: 'bomb', icon: '💣' }, { type: 'special', value: 'bomb', icon: '💣' });
-                if (trap === 'tornado') deck.push({ type: 'special', value: 'tornado', icon: '🌪️' });
-            });
-            
-            const shuffledDeck = shuffle(deck);
-            const columns = Math.ceil(Math.sqrt(shuffledDeck.length));
-            gameBoard.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
-            
-            shuffledDeck.forEach(cardData => {
-                const cardElement = document.createElement('div');
-                cardElement.classList.add('card-container', 'aspect-square');
-                const backFaceContent = cardData.type === 'image'
-                    ? `<img src="${cardData.value}" alt="Imagen de carta" onerror="this.onerror=null;this.src='https://placehold.co/100/ccc/fff?text=Error';">`
-                    : `<span class="text-4xl">${cardData.icon}</span>`;
-                cardElement.innerHTML = `
-                    <div class="card" data-type="${cardData.type}" data-value="${cardData.value}">
-                        <div class="card-face card-front">🐵</div>
-                        <div class="card-face card-back">${backFaceContent}</div>
-                    </div>`;
-                gameBoard.appendChild(cardElement);
-                cardElement.querySelector('.card').addEventListener('click', handleCardClick);
-            });
-            
-            setTimeout(() => { isBoardLocked = false; startTimer(); }, 500);
-        }
-        function handleCardClick(e) {
-            if (isBoardLocked || !isGameActive) return;
-            const clickedCard = e.currentTarget;
-            if (clickedCard.classList.contains('flipped') || clickedCard.classList.contains('matched')) return;
-            
-            clickSound.triggerAttackRelease('G3', '16n');
-            clickedCard.classList.add('flipped');
-            const cardType = clickedCard.dataset.type;
-            const cardValue = clickedCard.dataset.value;
-            if (cardType === 'special') {
-                if (cardValue === 'octopus') {
-                    triggerOctopusEffect(clickedCard);
-                    return;
-                }
-                if (cardValue === 'tornado') {
-                    triggerTornadoEffect(clickedCard);
-                    return;
-                }
-            }
-            flippedCards.push(clickedCard);
-            if (flippedCards.length === 2) {
-      _Búsqueda en Google_
-Escriba los términos de búsqueda en uno o más de los siguientes cuadros de búsqueda.
-            isBoardLocked = true;
-                checkForMatch();
-            }
-        }
-        function checkForMatch() {
-            const [card1, card2] = flippedCards;
+    <div id="game-container" class="w-full max-w-md mx-auto flex flex-col items-center space-y-4 bg-white/60 backdrop-blur-sm p-6 rounded-2xl shadow-2xl">
+        <h1 class="text-4xl font-bold text-orange-600 drop-shadow-lg">Memorama Blender</h1>
+        <div class="w-full flex justify-between items-center bg-white/50 p-3 rounded-xl shadow-md">
+            <div class="text-center">
+                <span class="text-sm text-orange-700">NIVEL</span>
+                <p id="level-display" class="text-2xl font-bold">1</p>
+            </div>
+            <div class="text-center">
+                <span class="text-sm text-orange-700">TIEMPO</span>
+                <p id="timer-display" class="text-2xl font-bold">0</p>
+            </div>
+        </div>
+        <div id="game-board-container" class="aspect-square w-full p-2 bg-white/30 rounded-xl shadow-inner">
+            <div id="game-board"></div>
+        </div>
+        <div id="controls" class="w-full grid grid-cols-2 gap-4">
+            <button id="start-button" class="w-full bg-green-500 text-white py-3 rounded-lg text-xl shadow-lg transition transform hover:scale-105">Iniciar</button>
+            <button id="stop-button" class="w-full bg-red-500 text-white py-3 rounded-lg text-xl shadow-lg transition transform hover:scale-105" disabled>Detener</button>
+        </div>
+        <button id="music-toggle" class="absolute top-4 right-4 text-3xl">🔇</button>
+    </div>
+    
+    <!-- Pantallas de superposición -->
+    <div id="start-screen" class="absolute inset-0 bg-yellow-400/90 flex flex-col justify-center items-center text-center p-8 z-10">
+        <h2 class="text-5xl text-orange-600 mb-4">¡Bienvenido!</h2>
+        <p class="text-xl mb-8">Encuentra los pares antes de que se acabe el tiempo. ¡Cuidado con las trampas!</p>
+        <button id="initial-start-button" class="bg-green-500 text-white py-4 px-12 rounded-full text-2xl shadow-xl transition transform hover:scale-110">Jugar Ahora</button>
+    </div>
+    <div id="ink-overlay" class="hidden absolute inset-0 bg-black z-30 pointer-events-none"></div>
+    <div id="boom-effect" class="hidden absolute inset-0 bg-red-500/80 z-40 text-white text-9xl font-extrabold items-center justify-center">¡BOOM!</div>
+    <div id="trap-message-container" class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gray-800 text-white p-6 rounded-2xl shadow-2xl z-50 text-center max-w-xs">
+        <p id="trap-message-text" class="text-lg"></p>
+    </div>
+    <div id="game-over-screen" class="hidden absolute inset-0 bg-black/80 flex-col justify-center items-center text-center p-8 z-20 transition-opacity duration-500">
+        <div id="skull-icon" class="text-8xl mb-6 skull-animated">💀</div>
+        <h2 id="game-over-title" class="text-3xl text-red-500 font-bold mb-4">¡Tiempo agotado!</h2>
+        <p id="game-over-message" class="text-white text-lg mb-8">Blenderito está decepcionado de ti :(</p>
+        <button id="restart-button" class="bg-yellow-500 text-gray-800 py-3 px-8 rounded-lg text-xl shadow-lg transition transform hover:scale-105">Reiniciar Nivel</button>
+    </div>
+    <div id="victory-screen" class="hidden absolute inset-0 bg-blue-400/90 flex-col justify-center items-center text-center p-8 z-20 transition-opacity duration-500">
+        <div id="confetti-container" class="absolute inset-0 overflow-hidden"></div>
+        <h2 class="text-5xl text-white font-extrabold drop-shadow-lg mb-4">¡FELICIDADES!</h2>
+        <p class="text-yellow-200 text-2xl mb-8">Felicidades Tony te debe $5 pesos</p>
+        <button id="play-again-button" class="bg-green-500 text-white py-4 px-12 rounded-full text-2xl shadow-xl transition transform hover:scale-110">Siguiente Nivel</button>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // URLs de las imágenes para las cartas
+        const IMAGE_URLS = [
+            'https://blendergroup.com/storage/product/media/565/gallery_1730999766_pWLKv.webp', 'https://blendergroup.com/storage/product/media/588/gallery_1731083526_8Uig3.webp', 'https://blendergroup.com/storage/product/media/570/gallery_1731017629_nAcBJ.webp', 'https://blendergroup.com/storage/product/media/581/gallery_1731021117_qNNUO.webp', 'https://blendergroup.com/storage/product/media/585/gallery_1731021463_T9Kpi.webp', 'https://blendergroup.com/storage/product/media/592/gallery_1731085277_JDKcO.webp', 'https://blendergroup.com/storage/product/media/781/gallery_1739479450_ITYkf.webp', 'https://blendergroup.com/storage/product/media/782/gallery_1739485368_s5Lqg.webp', 'https://blendergroup.com/storage/product/media/566/gallery_1730999841_m1G5l.webp', 'https://blendergroup.com/storage/product/media/590/gallery_1731084346_NZaou.webp', 'https://blendergroup.com/storage/product/media/587/gallery_1731082899_sJWHq.webp', 'https://blendergroup.com/storage/product/media/564/gallery_1730999667_YRbYx.webp', 'https://blendergroup.com/storage/product/media/582/gallery_1731021190_kNHHN.webp', 'https://blendergroup.com/storage/product/media/583/gallery_1731021280_iqST6.webp', 'https://blendergroup.com/storage/product/media/567/gallery_1730999938_9EmxA.webp',
+        ];
+        const MAX_LEVEL = 10;
+        
+        // Elementos del DOM
+        const gameBoard = document.getElementById('game-board');
+        const levelDisplay = document.getElementById('level-display');
+        const timerDisplay = document.getElementById('timer-display');
+        const startButton = document.getElementById('start-button');
+        const stopButton = document.getElementById('stop-button');
+        const musicToggleButton = document.getElementById('music-toggle');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const gameOverTitle = document.getElementById('game-over-title');
+        const gameOverMessage = document.getElementById('game-over-message');
+        const victoryScreen = document.getElementById('victory-screen');
+        const initialStartButton = document.getElementById('initial-start-button');
+        const restartButton = document.getElementById('restart-button');
+        const playAgainButton = document.getElementById('play-again-button');
+        const inkOverlay = document.getElementById('ink-overlay');
+        const boomEffect = document.getElementById('boom-effect');
+        const trapMessageContainer = document.getElementById('trap-message-container');
+        const trapMessageText = document.getElementById('trap-message-text');
+
+        // Estado del juego
+        let level = 1, timerInterval, timeLeft = 0, flippedCards = [], matchedPairs = 0, totalPairs = 0;
+        let isBoardLocked = false, isGameActive = false, isMusicPlaying = false;
+        let audioInitialized = false;
+
+        // Configuración de audio con Tone.js
+        const clickSound = new Tone.MembraneSynth({ pitchDecay: 0.02, octaves: 4, envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
+        clickSound.volume.value = -8;
+        const backgroundMusic = new Tone.MembraneSynth({ pitchDecay: 0.01, octaves: 6, oscillator: { type: "sine" }, envelope: { attack: 0.001, decay: 0.5, sustain: 0.01, release: 1.4, attackCurve: "exponential" } }).toDestination();
+        const musicPattern = new Tone.Sequence((time, note) => {
+            backgroundMusic.triggerAttackRelease(note, "8n", time);
+        }, ["C2", ["E2", "G2"], "A2", ["C3", "E3"]], "2n").start(0);
+        Tone.Transport.bpm.value = 90;
+        
+        const winSound = () => { new Tone.Synth().toDestination().triggerAttackRelease("C5", "8n", Tone.now() + 0.1); };
+        const loseSound = () => { new Tone.FMSynth().toDestination().triggerAttackRelease("C3", "4n"); };
+        const bombSound = () => { new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.005, decay: 0.3, sustain: 0 } }).toDestination().triggerAttackRelease("2n"); };
+
+        // --- FUNCIONES PRINCIPALES DEL JUEGO ---
+
+        async function initAudio() {
+            if (audioInitialized || Tone.context.state === 'running') {
+                audioInitialized = true;
+                return;
+            }
+            await Tone.start();
+            audioInitialized = true;
+            console.log('Audio context started by user interaction.');
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function createBoard() {
+            gameBoard.innerHTML = '';
+            isBoardLocked = true;
+            matchedPairs = 0;
+            totalPairs = level + 1;
+            
+            const imagePairs = IMAGE_URLS.slice(0, totalPairs);
+            let deck = imagePairs.flatMap(url => [{ type: 'image', value: url }, { type: 'image', value: url }]);
+            
+            let trapTypes = [];
+            if (level >= 4) trapTypes.push('octopus');
+            if (level >= 6) trapTypes.push('bomb');
+            if (level >= 8) trapTypes.push('tornado');
+            while (trapTypes.length > 2) {
+                trapTypes.splice(Math.floor(Math.random() * trapTypes.length), 1);
+            }
+            
+            trapTypes.forEach(trap => {
+                if (trap === 'octopus') deck.push({ type: 'special', value: 'octopus', icon: '🐙' });
+                if (trap === 'bomb') deck.push({ type: 'special', value: 'bomb', icon: '💣' }, { type: 'special', value: 'bomb', icon: '💣' });
+                if (trap === 'tornado') deck.push({ type: 'special', value: 'tornado', icon: '🌪️' });
+            });
+            
+            const shuffledDeck = shuffle(deck);
+            const columns = Math.ceil(Math.sqrt(shuffledDeck.length));
+            gameBoard.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+            
+            shuffledDeck.forEach(cardData => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('card-container', 'aspect-square');
+                const backFaceContent = cardData.type === 'image'
+                    ? `<img src="${cardData.value}" alt="Imagen de carta" onerror="this.onerror=null;this.src='https://placehold.co/100/ccc/fff?text=Error';">`
+                    : `<span class="text-4xl">${cardData.icon}</span>`;
+                cardElement.innerHTML = `
+                    <div class="card" data-type="${cardData.type}" data-value="${cardData.value}">
+                        <div class="card-face card-front">🐵</div>
+                        <div class="card-face card-back">${backFaceContent}</div>
+                    </div>`;
+                gameBoard.appendChild(cardElement);
+                cardElement.querySelector('.card').addEventListener('click', handleCardClick);
+            });
+            
+            setTimeout(() => { 
+                isBoardLocked = false; 
+                startTimer(); 
+            }, 500);
+        }
+
+        async function handleCardClick(e) {
+            await initAudio();
+            if (isBoardLocked || !isGameActive) return;
+            const clickedCard = e.currentTarget;
+            if (clickedCard.classList.contains('flipped') || clickedCard.classList.contains('matched')) return;
+            
+            clickSound.triggerAttackRelease('G3', '16n');
+            clickedCard.classList.add('flipped');
+            
+            const cardType = clickedCard.dataset.type;
+            const cardValue = clickedCard.dataset.value;
+
+            if (cardType === 'special') {
+                isBoardLocked = true;
+                setTimeout(() => {
+                    if (cardValue === 'octopus') triggerOctopusEffect(clickedCard);
+                    else if (cardValue === 'tornado') triggerTornadoEffect(clickedCard);
+                    else if (cardValue === 'bomb') { 
+                        flippedCards.push(clickedCard);
+                        if(flippedCards.length === 2) checkForMatch();
+                        else isBoardLocked = false;
+                    }
+                }, 500);
+                return;
+            }
+
+            flippedCards.push(clickedCard);
+            if (flippedCards.length === 2) {
+                isBoardLocked = true;
+                checkForMatch();
+            }
+        }
+
+        function checkForMatch() {
+            const [card1, card2] = flippedCards;
+            const isMatch = card1.dataset.value === card2.dataset.value;
+
+            if (isMatch) {
+                if (card1.dataset.value === 'bomb') {
+                    showTrapMessage("¡Desactivaste las bombas! Buen trabajo.");
+                    setTimeout(() => {
+                        card1.classList.add('matched');
+                        card2.classList.add('matched');
+                        flippedCards = [];
+                        isBoardLocked = false;
+                    }, 1000);
+                } else {
+                    disableCards();
+                }
+            } else {
+                if (card1.dataset.value === 'bomb' || card2.dataset.value === 'bomb') {
+                    triggerBombEffect();
+                } else {
+                    unflipCards();
+                }
+            }
+        }
+
+        function disableCards() {
+            const [card1, card2] = flippedCards;
+            card1.classList.add('matched');
+            card2.classList.add('matched');
+            
+            matchedPairs++;
+            flippedCards = [];
+            isBoardLocked = false;
+            
+            if (matchedPairs === totalPairs) {
+                endGame(true);
+            }
+        }
+
+        function unflipCards() {
+            setTimeout(() => {
+                flippedCards.forEach(card => card.classList.remove('flipped'));
+                flippedCards = [];
+                isBoardLocked = false;
+            }, 1200);
+        }
+
+        function startGame() {
+            isGameActive = true;
+            startButton.disabled = true;
+            stopButton.disabled = false;
+            levelDisplay.textContent = level;
+            createBoard();
+        }
+
+        function stopGame() {
+            isGameActive = false;
+            stopTimer();
+            startButton.disabled = false;
+            stopButton.disabled = true;
+        }
+
+        function endGame(isVictory) {
+            stopGame();
+            if (isVictory) {
+                winSound();
+                triggerConfetti();
+                victoryScreen.classList.remove('hidden');
+                victoryScreen.classList.add('flex');
+                if (level >= MAX_LEVEL) {
+                    playAgainButton.textContent = "¡Jugar de Nuevo!";
+                }
+            } else {
+                loseSound();
+                gameOverScreen.classList.remove('hidden');
+                gameOverScreen.classList.add('flex');
+            }
+        }
+
+        function startTimer() {
+            timeLeft = 60 - (level - 1) * 4; 
+            timerDisplay.textContent = timeLeft;
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    gameOverTitle.textContent = "¡Tiempo Agotado!";
+                    gameOverMessage.textContent = "Blenderito está decepcionado de ti :(";
+                    endGame(false);
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function showTrapMessage(message) {
+            trapMessageText.textContent = message;
+            trapMessageContainer.classList.remove('hidden');
+            setTimeout(() => {
+                trapMessageContainer.classList.add('hidden');
+            }, 2500);
+        }
+
+        function triggerOctopusEffect(card) {
+            showTrapMessage("¡Un pulpo ha manchado el tablero!");
+            inkOverlay.classList.remove('hidden');
+            inkOverlay.classList.add('active');
+            setTimeout(() => {
+                inkOverlay.classList.add('hidden');
+                inkOverlay.classList.remove('active');
+                card.classList.remove('flipped');
+                card.classList.add('matched');
+                isBoardLocked = false;
+            }, 2000);
+        }
+
+        function triggerTornadoEffect(card) {
+            showTrapMessage("¡Un tornado ha barajado las cartas!");
+            document.querySelectorAll('.card:not(.matched)').forEach(c => {
+                c.parentElement.classList.add('shuffling');
+            });
+            setTimeout(() => {
+                stopTimer();
+                createBoard();
+                document.querySelectorAll('.shuffling').forEach(c => c.classList.remove('shuffling'));
+            }, 500);
+        }
+
+        function triggerBombEffect() {
+            bombSound();
+            boomEffect.classList.remove('hidden');
+            boomEffect.classList.add('flex');
+            setTimeout(() => {
+                boomEffect.classList.add('hidden');
+                boomEffect.classList.remove('flex');
+                gameOverTitle.textContent = "¡BOOM! Encontraste una bomba.";
+                gameOverMessage.textContent = "Más cuidado la próxima vez.";
+                endGame(false);
+            }, 1500);
+        }
+        
+        function triggerConfetti() {
+            const container = document.getElementById('confetti-container');
+            container.innerHTML = '';
+            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = `${Math.random() * 100}vw`;
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = `${Math.random() * 2}s`;
+                confetti.style.animationDuration = `${2 + Math.random() * 2}s`;
+                container.appendChild(confetti);
+            }
+        }
+        
+        // --- MANEJO DE EVENTOS DE BOTONES ---
+
+        initialStartButton.addEventListener('click', () => {
+            // Acción muy simple: solo oculta la pantalla de inicio y comienza el juego.
+            // El audio se activará con el primer clic en una carta.
+            startScreen.classList.add('hidden');
+            startGame();
+        });
+
+        startButton.addEventListener('click', startGame);
+        stopButton.addEventListener('click', () => {
+             gameOverTitle.textContent = "Juego detenido";
+             gameOverMessage.textContent = "Puedes reiniciar el nivel cuando quieras.";
+             endGame(false);
+        });
+
+        restartButton.addEventListener('click', () => {
+            gameOverScreen.classList.add('hidden');
+            gameOverScreen.classList.remove('flex');
+            startGame();
+        });
+
+        playAgainButton.addEventListener('click', () => {
+            victoryScreen.classList.add('hidden');
+            victoryScreen.classList.remove('flex');
+            if(level < MAX_LEVEL) {
+                level++;
+            } else {
+                level = 1;
+            }
+            startGame();
+        });
+
+        musicToggleButton.addEventListener('click', async () => {
+            await initAudio();
+            if (isMusicPlaying) {
+                Tone.Transport.pause();
+                musicToggleButton.textContent = '🔇';
+            } else {
+                Tone.Transport.start();
+                musicToggleButton.textContent = '🔊';
+            }
+            isMusicPlaying = !isMusicPlaying;
+        });
+    });
+    </script>
+</body>
+</html>
