@@ -1,542 +1,291 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="es">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2575.6">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memorama Blender</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        /* Estilo para la fuente y el tema general */
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
+        body {
+            font-family: 'Fredoka One', cursive;
+            background-image: url('https://www.publicdomainpictures.net/pictures/270000/velka/concrete-texture-background-2.jpg');
+            background-size: cover;
+            color: #4A4A4A;
+            overscroll-behavior: none; 
+        }
+        /* Estilos para las cartas del juego */
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+        }
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+        .card.matched {
+            cursor: default;
+        }
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .card-front {
+            background: linear-gradient(135deg, #FFA500, #FFC107);
+            font-size: 3rem; 
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .card-back {
+            background-color: #fff;
+            padding: 5px;
+            transform: rotateY(180deg);
+            font-size: 2.5rem;
+        }
+        .card-back img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        #game-board {
+            display: grid;
+            gap: 10px;
+        }
+        
+        @keyframes skull-animation {
+            0%, 100% { transform: scale(1) rotate(-5deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+        }
+        .skull-animated {
+            animation: skull-animation 2s ease-in-out infinite;
+        }
+        @keyframes confetti-fall {
+            from { transform: translateY(-10vh) rotate(0deg); }
+            to { transform: translateY(110vh) rotate(720deg); }
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            opacity: 0.7;
+            animation: confetti-fall 3s linear forwards;
+        }
+        
+        @keyframes ink-spread {
+            from { opacity: 0; }
+            to { opacity: 0.85; }
+        }
+        #ink-overlay.active {
+            animation: ink-spread 0.5s forwards;
+        }
+        @keyframes card-shuffle-animation {
+            0% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.1) rotate(-10deg); }
+            75% { transform: scale(1.1) rotate(10deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        .shuffling {
+            animation: card-shuffle-animation 0.5s ease-in-out;
+            z-index: 10;
+        }
+        
+        @keyframes popup-animation {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        #trap-message-container {
+            animation: popup-animation 0.3s ease-out forwards;
+        }
+    </style>
 </head>
-<body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="es"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;Memorama Blender&lt;/title&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- Tailwind CSS para el diseño --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdn.tailwindcss.com"&gt;&lt;/script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- Tone.js para el audio --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"&gt;&lt;/script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>/* Estilo para la fuente y el tema general */</p>
-<p class="p1"><span class="Apple-converted-space">        </span>@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&amp;display=swap');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>body {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-family: 'Fredoka One', cursive;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-image: url('https://www.publicdomainpictures.net/pictures/270000/velka/concrete-texture-background-2.jpg');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-size: cover;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: #4A4A4A;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>overscroll-behavior: none;<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>/* Estilos para las cartas del juego */</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.card {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>width: 100%;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>height: 100%;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>position: relative;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>transform-style: preserve-3d;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>transition: transform 0.6s;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>cursor: pointer;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.card.flipped {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>transform: rotateY(180deg);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.card.matched {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>cursor: default;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.card-face {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>position: absolute;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>width: 100%;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>height: 100%;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>backface-visibility: hidden;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 12px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: flex;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>justify-content: center;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>align-items: center;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: 0 4px 10px rgba(0,0,0,0.1);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>.card-front {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background: linear-gradient(135deg, #FFA500, #FFC107);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 3rem;<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: white;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>text-shadow: 2px 2px 4px rgba(0,0,0,0.2);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.card-back {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-color: #fff;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 5px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>transform: rotateY(180deg);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 2.5rem;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.card-back img {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>width: 100%;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>height: 100%;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>object-fit: cover;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 8px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>#game-board {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: grid;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gap: 10px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>@keyframes skull-animation {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>0%, 100% { transform: scale(1) rotate(-5deg); }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>50% { transform: scale(1.1) rotate(5deg); }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.skull-animated {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>animation: skull-animation 2s ease-in-out infinite;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>@keyframes confetti-fall {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>from { transform: translateY(-10vh) rotate(0deg); }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>to { transform: translateY(110vh) rotate(720deg); }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.confetti {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>position: absolute;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>width: 10px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>height: 10px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-color: #f00;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>opacity: 0.7;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>animation: confetti-fall 3s linear forwards;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>@keyframes ink-spread {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>from { opacity: 0; }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>to { opacity: 0.85; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>#ink-overlay.active {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>animation: ink-spread 0.5s forwards;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>@keyframes card-shuffle-animation {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>0% { transform: scale(1) rotate(0deg); }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>25% { transform: scale(1.1) rotate(-10deg); }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>75% { transform: scale(1.1) rotate(10deg); }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>100% { transform: scale(1) rotate(0deg); }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.shuffling {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>animation: card-shuffle-animation 0.5s ease-in-out;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>z-index: 10;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>@keyframes popup-animation {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>0% { transform: scale(0.5); opacity: 0; }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>70% { transform: scale(1.05); opacity: 1; }</p>
-<p class="p1"><span class="Apple-converted-space">            </span>100% { transform: scale(1); opacity: 1; }</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>#trap-message-container {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>animation: popup-animation 0.3s ease-out forwards;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p1">&lt;body class="w-screen h-screen flex items-center justify-center p-4 bg-gray-200"&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- Contenedor principal del juego --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="game-container" class="w-full max-w-md mx-auto flex flex-col items-center space-y-4 bg-white/60 backdrop-blur-sm p-6 rounded-2xl shadow-2xl"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h1 class="text-4xl font-bold text-orange-600 drop-shadow-lg"&gt;Memorama Blender&lt;/h1&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;!-- Marcadores (Nivel y Tiempo) --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="w-full flex justify-between items-center bg-white/50 p-3 rounded-xl shadow-md"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="text-center"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;span class="text-sm text-orange-700"&gt;NIVEL&lt;/span&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;p id="level-display" class="text-2xl font-bold"&gt;1&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="text-center"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;span class="text-sm text-orange-700"&gt;TIEMPO&lt;/span&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>&lt;p id="timer-display" class="text-2xl font-bold"&gt;0&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;!-- Tablero de Juego --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="game-board-container" class="aspect-square w-full p-2 bg-white/30 rounded-xl shadow-inner"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="game-board"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;!-- Controles --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="controls" class="w-full grid grid-cols-2 gap-4"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">             </span>&lt;button id="start-button" class="w-full bg-green-500 text-white py-3 rounded-lg text-xl shadow-lg transition transform hover:scale-105"&gt;Iniciar&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">             </span>&lt;button id="stop-button" class="w-full bg-red-500 text-white py-3 rounded-lg text-xl shadow-lg transition transform hover:scale-105" disabled&gt;Detener&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;button id="music-toggle" class="absolute top-4 right-4 text-3xl"&gt;🔇&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- Pantalla de Inicio --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="start-screen" class="absolute inset-0 bg-yellow-400/90 flex flex-col justify-center items-center text-center p-8 z-10"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h2 class="text-5xl text-orange-600 mb-4"&gt;¡Bienvenido!&lt;/h2&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;p class="text-xl mb-8"&gt;Encuentra los pares antes de que se acabe el tiempo. ¡Cuidado con las trampas!&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;button id="initial-start-button" class="bg-green-500 text-white py-4 px-12 rounded-full text-2xl shadow-xl transition transform hover:scale-110"&gt;Jugar Ahora&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- Elementos de efectos especiales --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="ink-overlay" class="hidden absolute inset-0 bg-black z-30 pointer-events-none"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="boom-effect" class="hidden absolute inset-0 bg-red-500/80 z-40 text-white text-9xl font-extrabold items-center justify-center"&gt;¡BOOM!&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="trap-message-container" class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gray-800 text-white p-6 rounded-2xl shadow-2xl z-50 text-center max-w-xs"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;p id="trap-message-text" class="text-lg"&gt;&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- Pantallas de resultado --&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="game-over-screen" class="hidden absolute inset-0 bg-black/80 flex-col justify-center items-center text-center p-8 z-20 transition-opacity duration-500"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="skull-icon" class="text-8xl mb-6 skull-animated"&gt;💀&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h2 id="game-over-title" class="text-3xl text-red-500 font-bold mb-4"&gt;¡Tiempo agotado!&lt;/h2&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;p id="game-over-message" class="text-white text-lg mb-8"&gt;Blenderito está decepcionado de ti :(&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;button id="restart-button" class="bg-yellow-500 text-gray-800 py-3 px-8 rounded-lg text-xl shadow-lg transition transform hover:scale-105"&gt;Reiniciar Nivel&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="victory-screen" class="hidden absolute inset-0 bg-blue-400/90 flex-col justify-center items-center text-center p-8 z-20 transition-opacity duration-500"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">         </span>&lt;div id="confetti-container" class="absolute inset-0"&gt;&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">         </span>&lt;h2 class="text-5xl text-white font-extrabold drop-shadow-lg mb-4"&gt;¡FELICIDADES!&lt;/h2&gt;</p>
-<p class="p1"><span class="Apple-converted-space">         </span>&lt;p class="text-yellow-200 text-2xl mb-8"&gt;Felicidades Tony te debe $5 pesos&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">         </span>&lt;button id="play-again-button" class="bg-green-500 text-white py-4 px-12 rounded-full text-2xl shadow-xl transition transform hover:scale-110"&gt;Jugar de Nuevo&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>document.addEventListener('DOMContentLoaded', () =&gt; {</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>const IMAGE_URLS = [</p>
-<p class="p1"><span class="Apple-converted-space">            </span>'https://blendergroup.com/storage/product/media/565/gallery_1730999766_pWLKv.webp', 'https://blendergroup.com/storage/product/media/588/gallery_1731083526_8Uig3.webp', 'https://blendergroup.com/storage/product/media/570/gallery_1731017629_nAcBJ.webp', 'https://blendergroup.com/storage/product/media/581/gallery_1731021117_qNNUO.webp', 'https://blendergroup.com/storage/product/media/585/gallery_1731021463_T9Kpi.webp', 'https://blendergroup.com/storage/product/media/592/gallery_1731085277_JDKcO.webp', 'https://blendergroup.com/storage/product/media/781/gallery_1739479450_ITYkf.webp', 'https://blendergroup.com/storage/product/media/782/gallery_1739485368_s5Lqg.webp', 'https://blendergroup.com/storage/product/media/566/gallery_1730999841_m1G5l.webp', 'https://blendergroup.com/storage/product/media/590/gallery_1731084346_NZaou.webp', 'https://blendergroup.com/storage/product/media/587/gallery_1731082899_sJWHq.webp', 'https://blendergroup.com/storage/product/media/564/gallery_1730999667_YRbYx.webp', 'https://blendergroup.com/storage/product/media/582/gallery_1731021190_kNHHN.webp', 'https://blendergroup.com/storage/product/media/583/gallery_1731021280_iqST6.webp', 'https://blendergroup.com/storage/product/media/567/gallery_1730999938_9EmxA.webp',</p>
-<p class="p1"><span class="Apple-converted-space">        </span>];</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const MAX_LEVEL = 10;</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// Elementos del DOM</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const gameBoard = document.getElementById('game-board');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const levelDisplay = document.getElementById('level-display');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const timerDisplay = document.getElementById('timer-display');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const startButton = document.getElementById('start-button');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const stopButton = document.getElementById('stop-button');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const musicToggleButton = document.getElementById('music-toggle');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const startScreen = document.getElementById('start-screen');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const gameOverScreen = document.getElementById('game-over-screen');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const gameOverTitle = document.getElementById('game-over-title');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const gameOverMessage = document.getElementById('game-over-message');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const victoryScreen = document.getElementById('victory-screen');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const initialStartButton = document.getElementById('initial-start-button');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const restartButton = document.getElementById('restart-button');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const playAgainButton = document.getElementById('play-again-button');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const inkOverlay = document.getElementById('ink-overlay');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const boomEffect = document.getElementById('boom-effect');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const trapMessageContainer = document.getElementById('trap-message-container');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const trapMessageText = document.getElementById('trap-message-text');</p>
-<p class="p2"><br></p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// Estado del juego</p>
-<p class="p1"><span class="Apple-converted-space">        </span>let level = 1, timer, timeLeft = 0, timerInterval, flippedCards = [], matchedPairs = 0, totalPairs = 0;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>let isBoardLocked = false, isGameActive = false, isMusicPlaying = false;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// Configuración de audio</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const clickSound = new Tone.MembraneSynth({ pitchDecay: 0.02, octaves: 4, envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();</p>
-<p class="p1"><span class="Apple-converted-space">        </span>clickSound.volume.value = -8;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const backgroundMusic = new Tone.MembraneSynth({</p>
-<p class="p1"><span class="Apple-converted-space">            </span>pitchDecay: 0.01,</p>
-<p class="p1"><span class="Apple-converted-space">            </span>octaves: 6,</p>
-<p class="p1"><span class="Apple-converted-space">            </span>oscillator: { type: "sine" },</p>
-<p class="p1"><span class="Apple-converted-space">            </span>envelope: {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>attack: 0.001,</p>
-<p class="p1"><span class="Apple-converted-space">                </span>decay: 0.5,</p>
-<p class="p1"><span class="Apple-converted-space">                </span>sustain: 0.01,</p>
-<p class="p1"><span class="Apple-converted-space">                </span>release: 1.4,</p>
-<p class="p1"><span class="Apple-converted-space">                </span>attackCurve: "exponential"</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}).toDestination();</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const musicPattern = new Tone.Sequence((time, note) =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>backgroundMusic.triggerAttackRelease(note, "8n", time);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}, ["C2", ["E2", "G2"], "A2", ["C3", "E3"]], "2n").start(0);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>Tone.Transport.bpm.value = 90;</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>const winSound = () =&gt; { new Tone.Synth().toDestination().triggerAttackRelease("C5", "8n", Tone.now() + 0); };</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const loseSound = () =&gt; { new Tone.FMSynth().toDestination().triggerAttackRelease("C3", "4n"); };</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const bombSound = () =&gt; { new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.005, decay: 0.3, sustain: 0 } }).toDestination().triggerAttackRelease("2n"); };</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function shuffle(array) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>for (let i = array.length - 1; i &gt; 0; i--) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>const j = Math.floor(Math.random() * (i + 1));</p>
-<p class="p1"><span class="Apple-converted-space">                </span>[array[i], array[j]] = [array[j], array[i]];</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">            </span>return array;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function createBoard() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gameBoard.innerHTML = '';</p>
-<p class="p1"><span class="Apple-converted-space">            </span>isBoardLocked = true;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>matchedPairs = 0;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>totalPairs = level + 1;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>const imagePairs = IMAGE_URLS.slice(0, totalPairs);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>let deck = imagePairs.flatMap(url =&gt; [{ type: 'image', value: url }, { type: 'image', value: url }]);</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>let trapTypes = [];</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (level &gt;= 4) trapTypes.push('octopus');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (level &gt;= 6) trapTypes.push('bomb');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (level &gt;= 8) trapTypes.push('tornado');</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>while (trapTypes.length &gt; 2) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>trapTypes.splice(Math.floor(Math.random() * trapTypes.length), 1);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>trapTypes.forEach(trap =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (trap === 'octopus') deck.push({ type: 'special', value: 'octopus', icon: '🐙' });</p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (trap === 'bomb') deck.push({ type: 'special', value: 'bomb', icon: '💣' }, { type: 'special', value: 'bomb', icon: '💣' });</p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (trap === 'tornado') deck.push({ type: 'special', value: 'tornado', icon: '🌪️' });</p>
-<p class="p1"><span class="Apple-converted-space">            </span>});</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>const shuffledDeck = shuffle(deck);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>const columns = Math.ceil(Math.sqrt(shuffledDeck.length));</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gameBoard.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>shuffledDeck.forEach(cardData =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>const cardElement = document.createElement('div');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>cardElement.classList.add('card-container', 'aspect-square');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>const backFaceContent = cardData.type === 'image'</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>? `&lt;img src="${cardData.value}" alt="Imagen de carta" onerror="this.onerror=null;this.src='https://placehold.co/100/ccc/fff?text=Error';"&gt;`</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>: `&lt;span class="text-4xl"&gt;${cardData.icon}&lt;/span&gt;`;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">                </span>cardElement.innerHTML = `</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;div class="card" data-type="${cardData.type}" data-value="${cardData.value}"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="card-face card-front"&gt;🐵&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div class="card-face card-back"&gt;${backFaceContent}&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;`;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>gameBoard.appendChild(cardElement);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>cardElement.querySelector('.card').addEventListener('click', handleCardClick);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>});</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>setTimeout(() =&gt; { isBoardLocked = false; startTimer(); }, 500);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function handleCardClick(e) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (isBoardLocked || !isGameActive) return;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const clickedCard = e.currentTarget;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (clickedCard.classList.contains('flipped') || clickedCard.classList.contains('matched')) return;</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>clickSound.triggerAttackRelease('G3', '16n');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>clickedCard.classList.add('flipped');</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>const cardType = clickedCard.dataset.type;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const cardValue = clickedCard.dataset.value;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (cardType === 'special') {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (cardValue === 'octopus') {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>triggerOctopusEffect(clickedCard);</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}</p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (cardValue === 'tornado') {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>triggerTornadoEffect(clickedCard);</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>flippedCards.push(clickedCard);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (flippedCards.length === 2) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>isBoardLocked = true;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>checkForMatch();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function checkForMatch() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const [card1, card2] = flippedCards;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const isMatch = card1.dataset.value === card2.dataset.value;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (isMatch) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>if(card1.dataset.value === 'bomb') {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>triggerBombEffect(card1, card2);</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>flippedCards = [];</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}</p>
-<p class="p1"><span class="Apple-converted-space">                </span>matchedPairs++;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>card1.classList.add('matched');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>card2.classList.add('matched');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (matchedPairs === totalPairs) {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>clearInterval(timerInterval);</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>setTimeout(nextLevel, 1000);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}</p>
-<p class="p1"><span class="Apple-converted-space">                </span>isBoardLocked = false;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>setTimeout(() =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>card1.classList.remove('flipped');</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>card2.classList.remove('flipped');</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>isBoardLocked = false;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}, 1200);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">            </span>flippedCards = [];</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function showTrapMessage(message) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>trapMessageText.textContent = message;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>trapMessageContainer.classList.remove('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>setTimeout(() =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>trapMessageContainer.classList.add('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}, 3000);<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function triggerOctopusEffect(card) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>isBoardLocked = true;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>showTrapMessage("¡Este pulpo ha manchado de tinta tu pantalla! Jeje...");</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>setTimeout(() =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>inkOverlay.classList.remove('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>inkOverlay.classList.add('active');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>setTimeout(() =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>inkOverlay.classList.add('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>inkOverlay.classList.remove('active');</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>card.classList.remove('flipped');<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                    </span>isBoardLocked = false;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}, 7000);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}, 1000);<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function triggerTornadoEffect(card) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>isBoardLocked = true;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>showTrapMessage("¡Cuidado! Este tornado revuelca todas tus cartas... ¡Ñaca ñaca!");</p>
-<p class="p1"><span class="Apple-converted-space">            </span>setTimeout(() =&gt; card.classList.remove('flipped'), 1000);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>const allCards = Array.from(document.querySelectorAll('#game-board .card-container'));</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const unflippedCards = allCards.filter(c =&gt; !c.querySelector('.card').classList.contains('matched') &amp;&amp; !c.querySelector('.card').classList.contains('flipped'));</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (unflippedCards.length &lt; 4) {<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>isBoardLocked = false;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>return;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>const cardsToShuffle = shuffle(unflippedCards).slice(0, 4);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const contents = cardsToShuffle.map(c =&gt; c.innerHTML);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const shuffledContents = shuffle(contents);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>setTimeout(() =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>cardsToShuffle.forEach(c =&gt; c.classList.add('shuffling'));</p>
-<p class="p2"><span class="Apple-converted-space">                </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>setTimeout(() =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>cardsToShuffle.forEach((c, index) =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>c.innerHTML = shuffledContents[index];</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>c.querySelector('.card').addEventListener('click', handleCardClick);</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>c.classList.remove('shuffling');</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>});</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>isBoardLocked = false;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}, 500);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}, 1000);<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function triggerBombEffect(card1, card2) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>bombSound();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>showTrapMessage("¡Juntaste el par de bombas y… Boom! ¡Tu juego ha explotado y terminado!");</p>
-<p class="p1"><span class="Apple-converted-space">            </span>card1.classList.add('matched');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>card2.classList.add('matched');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>boomEffect.classList.remove('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>boomEffect.classList.add('flex');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>clearInterval(timerInterval);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>setTimeout(() =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>boomEffect.classList.add('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>boomEffect.classList.remove('flex');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>showGameOverScreen("¡BOOM!", "Encontraste un par de bombas.");</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}, 2500);<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function calculateTimeForLevel(currentLevel) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const pairs = currentLevel + 1;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>let time = 15;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>time += pairs * 6;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (currentLevel &gt;= 4) time += 7;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (currentLevel &gt;= 6) time += 12;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (currentLevel &gt;= 8) time += 10;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>return time;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function startGame(isNewGame = false) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (isNewGame) level = 1;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>isGameActive = true;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>startButton.disabled = true;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>stopButton.disabled = false;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>levelDisplay.textContent = level;</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>timeLeft = calculateTimeForLevel(level);<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>timerDisplay.textContent = timeLeft;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>createBoard();</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function nextLevel() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (level &gt;= MAX_LEVEL) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>showVictoryScreen();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>level++;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>startGame();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function startTimer() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>clearInterval(timerInterval);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>timerInterval = setInterval(() =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>timeLeft--;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>timerDisplay.textContent = timeLeft;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (timeLeft &lt;= 0) {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>clearInterval(timerInterval);</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>showGameOverScreen();</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}, 1000);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function showGameOverScreen(title = "¡Tiempo agotado!", message = "Blenderito está decepcionado de ti :(") {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>loseSound();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>isGameActive = false;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gameOverTitle.textContent = title;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gameOverMessage.textContent = message;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gameOverScreen.classList.remove('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gameOverScreen.classList.add('flex');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function showVictoryScreen() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>winSound();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>isGameActive = false;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>createConfetti();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>victoryScreen.classList.remove('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>victoryScreen.classList.add('flex');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function createConfetti() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const container = document.getElementById('confetti-container');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if(!container) return;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>container.innerHTML = '';</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const colors = ['#f44336', '#e91e63', '#9c27b0', '#2196f3', '#4caf50', '#ffeb3b'];</p>
-<p class="p1"><span class="Apple-converted-space">            </span>for (let i = 0; i &lt; 100; i++) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>const c = document.createElement('div');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>c.classList.add('confetti');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>c.style.left = `${Math.random()*100}vw`; c.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)]; c.style.animationDelay=`${Math.random()*2}s`; c.style.transform=`scale(${Math.random()*0.5+0.5})`;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>container.appendChild(c);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// --- MANEJADORES DE EVENTOS ---</p>
-<p class="p1"><span class="Apple-converted-space">        </span>initialStartButton.addEventListener('click', () =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>startScreen.style.display = 'none';</p>
-<p class="p1"><span class="Apple-converted-space">            </span>startGame(true);</p>
-<p class="p1">});</p>
-<p class="p1"><span class="Apple-converted-space">        </span>startButton.addEventListener('click', () =&gt; startGame(true));</p>
-<p class="p1"><span class="Apple-converted-space">        </span>stopButton.addEventListener('click', () =&gt; { isGameActive = false; clearInterval(timerInterval); startButton.disabled = false; stopButton.disabled = true; startScreen.style.display = 'flex'; });</p>
-<p class="p1"><span class="Apple-converted-space">        </span>restartButton.addEventListener('click', () =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gameOverScreen.classList.add('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>gameOverScreen.classList.remove('flex');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>startGame();<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>});</p>
-<p class="p1"><span class="Apple-converted-space">        </span>playAgainButton.addEventListener('click', () =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>victoryScreen.classList.add('hidden');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>victoryScreen.classList.remove('flex');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>startGame(true);<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>});</p>
-<p class="p1"><span class="Apple-converted-space">        </span>musicToggleButton.addEventListener('click', async () =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">             </span>await Tone.start();</p>
-<p class="p1"><span class="Apple-converted-space">             </span>if (isMusicPlaying) { Tone.Transport.stop(); musicToggleButton.textContent = '🔇'; }<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">             </span>else { Tone.Transport.start(); musicToggleButton.textContent = '🎵'; }</p>
-<p class="p1"><span class="Apple-converted-space">             </span>isMusicPlaying = !isMusicPlaying;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>});</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/script&gt;</p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
-</body>
-</html>
+<body class="w-screen h-screen flex items-center justify-center p-4 bg-gray-200">
+        <div id="game-container" class="w-full max-w-md mx-auto flex flex-col items-center space-y-4 bg-white/60 backdrop-blur-sm p-6 rounded-2xl shadow-2xl">
+        <h1 class="text-4xl font-bold text-orange-600 drop-shadow-lg">Memorama Blender</h1>
+                <div class="w-full flex justify-between items-center bg-white/50 p-3 rounded-xl shadow-md">
+            <div class="text-center">
+                <span class="text-sm text-orange-700">NIVEL</span>
+                <p id="level-display" class="text-2xl font-bold">1</p>
+            </div>
+            <div class="text-center">
+                <span class="text-sm text-orange-700">TIEMPO</span>
+                <p id="timer-display" class="text-2xl font-bold">0</p>
+            </div>
+        </div>
+                <div id="game-board-container" class="aspect-square w-full p-2 bg-white/30 rounded-xl shadow-inner">
+            <div id="game-board"></div>
+        </div>
+        
+                <div id="controls" class="w-full grid grid-cols-2 gap-4">
+             <button id="start-button" class="w-full bg-green-500 text-white py-3 rounded-lg text-xl shadow-lg transition transform hover:scale-105">Iniciar</button>
+             <button id="stop-button" class="w-full bg-red-500 text-white py-3 rounded-lg text-xl shadow-lg transition transform hover:scale-105" disabled>Detener</button>
+        </div>
+        <button id="music-toggle" class="absolute top-4 right-4 text-3xl">🔇</button>
+    </div>
+        <div id="start-screen" class="absolute inset-0 bg-yellow-400/90 flex flex-col justify-center items-center text-center p-8 z-10">
+        <h2 class="text-5xl text-orange-600 mb-4">¡Bienvenido!</h2>
+        <p class="text-xl mb-8">Encuentra los pares antes de que se acabe el tiempo. ¡Cuidado con las trampas!</p>
+        <button id="initial-start-button" class="bg-green-500 text-white py-4 px-12 rounded-full text-2xl shadow-xl transition transform hover:scale-110">Jugar Ahora</button>
+    </div>
+        <div id="ink-overlay" class="hidden absolute inset-0 bg-black z-30 pointer-events-none"></div>
+    <div id="boom-effect" class="hidden absolute inset-0 bg-red-500/80 z-40 text-white text-9xl font-extrabold items-center justify-center">¡BOOM!</div>
+    <div id="trap-message-container" class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gray-800 text-white p-6 rounded-2xl shadow-2xl z-50 text-center max-w-xs">
+        <p id="trap-message-text" class="text-lg"></p>
+    </div>
+        <div id="game-over-screen" class="hidden absolute inset-0 bg-black/80 flex-col justify-center items-center text-center p-8 z-20 transition-opacity duration-500">
+        <div id="skull-icon" class="text-8xl mb-6 skull-animated">💀</div>
+        <h2 id="game-over-title" class="text-3xl text-red-500 font-bold mb-4">¡Tiempo agotado!</h2>
+        <p id="game-over-message" class="text-white text-lg mb-8">Blenderito está decepcionado de ti :(</p>
+        <button id="restart-button" class="bg-yellow-500 text-gray-800 py-3 px-8 rounded-lg text-xl shadow-lg transition transform hover:scale-105">Reiniciar Nivel</button>
+    </div>
+    <div id="victory-screen" class="hidden absolute inset-0 bg-blue-400/90 flex-col justify-center items-center text-center p-8 z-20 transition-opacity duration-500">
+         <div id="confetti-container" class="absolute inset-0"></div>
+         <h2 class="text-5xl text-white font-extrabold drop-shadow-lg mb-4">¡FELICIDADES!</h2>
+         <p class="text-yellow-200 text-2xl mb-8">Felicidades Tony te debe $5 pesos</p>
+         <button id="play-again-button" class="bg-green-500 text-white py-4 px-12 rounded-full text-2xl shadow-xl transition transform hover:scale-110">Jugar de Nuevo</button>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const IMAGE_URLS = [
+            'https://blendergroup.com/storage/product/media/565/gallery_1730999766_pWLKv.webp', 'https://blendergroup.com/storage/product/media/588/gallery_1731083526_8Uig3.webp', 'https://blendergroup.com/storage/product/media/570/gallery_1731017629_nAcBJ.webp', 'https://blendergroup.com/storage/product/media/581/gallery_1731021117_qNNUO.webp', 'https://blendergroup.com/storage/product/media/585/gallery_1731021463_T9Kpi.webp', 'https://blendergroup.com/storage/product/media/592/gallery_1731085277_JDKcO.webp', 'https://blendergroup.com/storage/product/media/781/gallery_1739479450_ITYkf.webp', 'https://blendergroup.com/storage/product/media/782/gallery_1739485368_s5Lqg.webp', 'https://blendergroup.com/storage/product/media/566/gallery_1730999841_m1G5l.webp', 'https://blendergroup.com/storage/product/media/590/gallery_1731084346_NZaou.webp', 'https://blendergroup.com/storage/product/media/587/gallery_1731082899_sJWHq.webp', 'https://blendergroup.com/storage/product/media/564/gallery_1730999667_YRbYx.webp', 'https://blendergroup.com/storage/product/media/582/gallery_1731021190_kNHHN.webp', 'https://blendergroup.com/storage/product/media/583/gallery_1731021280_iqST6.webp', 'https://blendergroup.com/storage/product/media/567/gallery_1730999938_9EmxA.webp',
+        ];
+        const MAX_LEVEL = 10;
+        
+        // Elementos del DOM
+        const gameBoard = document.getElementById('game-board');
+        const levelDisplay = document.getElementById('level-display');
+        const timerDisplay = document.getElementById('timer-display');
+        const startButton = document.getElementById('start-button');
+        const stopButton = document.getElementById('stop-button');
+        const musicToggleButton = document.getElementById('music-toggle');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const gameOverTitle = document.getElementById('game-over-title');
+        const gameOverMessage = document.getElementById('game-over-message');
+        const victoryScreen = document.getElementById('victory-screen');
+        const initialStartButton = document.getElementById('initial-start-button');
+        const restartButton = document.getElementById('restart-button');
+        const playAgainButton = document.getElementById('play-again-button');
+        const inkOverlay = document.getElementById('ink-overlay');
+        const boomEffect = document.getElementById('boom-effect');
+        const trapMessageContainer = document.getElementById('trap-message-container');
+        const trapMessageText = document.getElementById('trap-message-text');
+        // Estado del juego
+        let level = 1, timer, timeLeft = 0, timerInterval, flippedCards = [], matchedPairs = 0, totalPairs = 0;
+        let isBoardLocked = false, isGameActive = false, isMusicPlaying = false;
+        // Configuración de audio
+        const clickSound = new Tone.MembraneSynth({ pitchDecay: 0.02, octaves: 4, envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
+        clickSound.volume.value = -8;
+        const backgroundMusic = new Tone.MembraneSynth({
+            pitchDecay: 0.01,
+            octaves: 6,
+            oscillator: { type: "sine" },
+            envelope: {
+                attack: 0.001,
+                decay: 0.5,
+                sustain: 0.01,
+                release: 1.4,
+                attackCurve: "exponential"
+            }
+        }).toDestination();
+        const musicPattern = new Tone.Sequence((time, note) => {
+            backgroundMusic.triggerAttackRelease(note, "8n", time);
+        }, ["C2", ["E2", "G2"], "A2", ["C3", "E3"]], "2n").start(0);
+        Tone.Transport.bpm.value = 90;
+        
+        const winSound = () => { new Tone.Synth().toDestination().triggerAttackRelease("C5", "8n", Tone.now() + 0); };
+        const loseSound = () => { new Tone.FMSynth().toDestination().triggerAttackRelease("C3", "4n"); };
+        const bombSound = () => { new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.005, decay: 0.3, sustain: 0 } }).toDestination().triggerAttackRelease("2n"); };
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        function createBoard() {
+            gameBoard.innerHTML = '';
+            isBoardLocked = true;
+            matchedPairs = 0;
+            totalPairs = level + 1;
+            const imagePairs = IMAGE_URLS.slice(0, totalPairs);
+            let deck = imagePairs.flatMap(url => [{ type: 'image', value: url }, { type: 'image', value: url }]);
+            
+            let trapTypes = [];
+            if (level >= 4) trapTypes.push('octopus');
+            if (level >= 6) trapTypes.push('bomb');
+            if (level >= 8) trapTypes.push('tornado');
+            while (trapTypes.length > 2) {
+                trapTypes.splice(Math.floor(Math.random() * trapTypes.length), 1);
+            }
+            
+            trapTypes.forEach(trap => {
+                if (trap === 'octopus') deck.push({ type: 'special', value: 'octopus', icon: '🐙' });
+                if (trap === 'bomb') deck.push({ type: 'special', value: 'bomb', icon: '💣' }, { type: 'special', value: 'bomb', icon: '💣' });
+                if (trap === 'tornado') deck.push({ type: 'special', value: 'tornado', icon: '🌪️' });
+            });
+            
+            const shuffledDeck = shuffle(deck);
+            const columns = Math.ceil(Math.sqrt(shuffledDeck.length));
+            gameBoard.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+            
+            shuffledDeck.forEach(cardData => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('card-container', 'aspect-square');
+                const backFaceContent = cardData.type === 'image'
+                    ? `<img src="${cardData.value}" alt="Imagen de carta" onerror="this.onerror=null;this.src='https://placehold.co/100/ccc/fff?text=Error';">`
+                    : `<span class="text-4xl">${cardData.icon}</span>`;
+                cardElement.innerHTML = `
+                    <div class="card" data-type="${cardData.type}" data-value="${cardData.value}">
+                        <div class="card-face card-front">🐵</div>
+                        <div class="card-face card-back">${backFaceContent}</div>
+                    </div>`;
+                gameBoard.appendChild(cardElement);
+                cardElement.querySelector('.card').addEventListener('click', handleCardClick);
+            });
+            
+            setTimeout(() => { isBoardLocked = false; startTimer(); }, 500);
+        }
+        function handleCardClick(e) {
+            if (isBoardLocked || !isGameActive) return;
+            const clickedCard = e.currentTarget;
+            if (clickedCard.classList.contains('flipped') || clickedCard.classList.contains('matched')) return;
+            
+            clickSound.triggerAttackRelease('G3', '16n');
+            clickedCard.classList.add('flipped');
+            const cardType = clickedCard.dataset.type;
+            const cardValue = clickedCard.dataset.value;
+            if (cardType === 'special') {
+                if (cardValue === 'octopus') {
+                    triggerOctopusEffect(clickedCard);
+                    return;
+                }
+                if (cardValue === 'tornado') {
+                    triggerTornadoEffect(clickedCard);
+                    return;
+                }
+            }
+            flippedCards.push(clickedCard);
+            if (flippedCards.length === 2) {
+      _Búsqueda en Google_
+Escriba los términos de búsqueda en uno o más de los siguientes cuadros de búsqueda.
+            isBoardLocked = true;
+                checkForMatch();
+            }
+        }
+        function checkForMatch() {
+            const [card1, card2] = flippedCards;
